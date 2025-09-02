@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template, send_from_directory
 from datetime import datetime, timedelta
 import requests
 import threading
@@ -16,7 +16,7 @@ from shared.utils import setup_logging, health_check_response
 from services.monitor.health_checker import HealthChecker
 from services.monitor.kafka_monitor import start_kafka_monitor
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 
 # Setup logging
 logger = setup_logging('monitor-service')
@@ -130,7 +130,16 @@ def get_alerts():
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/dashboard', methods=['GET'])
-def get_dashboard():
+def dashboard():
+    """Serve the dashboard HTML page"""
+    try:
+        return render_template('dashboard.html')
+    except Exception as e:
+        logger.error(f"Error serving dashboard: {e}")
+        return f"Error loading dashboard: {str(e)}", 500
+
+@app.route('/api/monitor/dashboard', methods=['GET'])
+def get_dashboard_data():
     """Get comprehensive dashboard data"""
     try:
         services_status = health_checker.get_all_services_status()
@@ -164,6 +173,33 @@ def get_dashboard():
         
     except Exception as e:
         logger.error(f"Error getting dashboard data: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/monitor/health-history', methods=['GET'])
+def get_health_history():
+    """Get historical health data for charts"""
+    try:
+        # Get last 30 data points for each service
+        history_data = {}
+        
+        for service_name, history in service_health_history.items():
+            service_history = list(history)[-30:]  # Last 30 points
+            history_data[service_name] = [
+                {
+                    'timestamp': entry['timestamp'],
+                    'status': entry['status'],
+                    'healthy': 1 if entry['status'] == 'healthy' else 0
+                }
+                for entry in service_history
+            ]
+        
+        return jsonify({
+            'timestamp': datetime.utcnow().isoformat(),
+            'history': history_data
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error getting health history: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 def add_alert(alert_type: str, message: str, service: str = None, severity: str = 'warning'):

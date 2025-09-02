@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor Dashboard - Sistema Microservicios</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            color: #334155;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card h3 {
+            color: #1e293b;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .status-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .status-card .value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-card .label {
+            color: #64748b;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .healthy { color: #10b981; }
+        .warning { color: #f59e0b; }
+        .critical { color: #ef4444; }
+        .degraded { color: #f97316; }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .alerts-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .alert-critical { 
+            background: #fef2f2; 
+            border-color: #ef4444; 
+        }
+
+        .alert-warning { 
+            background: #fffbeb; 
+            border-color: #f59e0b; 
+        }
+
+        .alert-info { 
+            background: #eff6ff; 
+            border-color: #3b82f6; 
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+
+        .service-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .service-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-healthy {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-unhealthy {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-degraded {
+            background: #fed7aa;
+            color: #9a3412;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-overview {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏗️ Monitor Dashboard</h1>
+        <p>Sistema de Microservicios - Estado en Tiempo Real</p>
+        <div id="lastUpdate" style="margin-top: 1rem; opacity: 0.8; font-size: 0.9rem;"></div>
+    </div>
+
+    <div class="container">
+        <!-- Status Overview -->
+        <div class="status-overview">
+            <div class="status-card">
+                <div class="value healthy" id="healthyServices">-</div>
+                <div class="label">Servicios Saludables</div>
+            </div>
+            <div class="status-card">
+                <div class="value" id="totalServices">-</div>
+                <div class="label">Total Servicios</div>
+            </div>
+            <div class="status-card">
+                <div class="value" id="healthPercentage">-</div>
+                <div class="label">% Disponibilidad</div>
+            </div>
+            <div class="status-card">
+                <div class="value warning" id="totalAlerts">-</div>
+                <div class="label">Alertas Activas</div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid">
+            <!-- Service Health Timeline -->
+            <div class="card">
+                <h3>📊 Estado de Servicios (Últimos 30 min)</h3>
+                <div class="chart-container">
+                    <canvas id="healthTimelineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- System Health Percentage -->
+            <div class="card">
+                <h3>💚 Porcentaje de Salud del Sistema</h3>
+                <div class="chart-container">
+                    <canvas id="systemHealthChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Kafka Messages -->
+            <div class="card">
+                <h3>📡 Estadísticas de Kafka</h3>
+                <div class="chart-container">
+                    <canvas id="kafkaChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Response Times -->
+            <div class="card">
+                <h3>⏱️ Tiempos de Respuesta</h3>
+                <div class="chart-container">
+                    <canvas id="responseTimeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Status -->
+        <div class="card">
+            <h3>🔧 Estado Detallado de Servicios</h3>
+            <div class="services-grid" id="servicesGrid">
+                <div class="loading">Cargando servicios...</div>
+            </div>
+        </div>
+
+        <!-- Recent Alerts -->
+        <div class="card">
+            <h3>🚨 Alertas Recientes</h3>
+            <div class="alerts-list" id="alertsList">
+                <div class="loading">Cargando alertas...</div>
+            </div>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="refreshDashboard()">
+        🔄 Actualizar
+    </button>
+
+    <script>
+        // Global variables
+        let charts = {};
+        let refreshInterval;
+
+        // Initialize dashboard - Handle both cases: DOM ready and already loaded
+        function initializeDashboard() {
+            console.log('Initializing dashboard...');
+            try {
+                initCharts();
+                refreshDashboard();
+                
+                // Auto-refresh every 1 second for real-time feel
+                refreshInterval = setInterval(refreshDashboard, 1000);
+                console.log('Dashboard initialized successfully');
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+            }
+        }
+
+        // Handle both scenarios: DOM not ready and DOM already loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeDashboard);
+        } else {
+            // DOM already loaded
+            initializeDashboard();
+        }
+
+        function initCharts() {
+            console.log('Initializing charts...');
+            
+            // Health Timeline Chart
+            const healthTimelineElement = document.getElementById('healthTimelineChart');
+            if (!healthTimelineElement) {
+                console.error('healthTimelineChart element not found');
+                return;
+            }
+            
+            console.log('Found healthTimelineChart element, creating context...');
+            const healthCtx = healthTimelineElement.getContext('2d');
+            charts.healthTimeline = new Chart(healthCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            ticks: {
+                                callback: function(value) {
+                                    return value === 1 ? 'Saludable' : 'No Saludable';
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 10
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // System Health Chart
+            const systemCtx = document.getElementById('systemHealthChart').getContext('2d');
+            charts.systemHealth = new Chart(systemCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '% Salud del Sistema',
+                        data: [],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Kafka Chart
+            const kafkaCtx = document.getElementById('kafkaChart').getContext('2d');
+            charts.kafka = new Chart(kafkaCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#ef4444',
+                            '#8b5cf6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Response Time Chart
+            const responseCtx = document.getElementById('responseTimeChart').getContext('2d');
+            charts.responseTime = new Chart(responseCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Tiempo de Respuesta (ms)',
+                        data: [],
+                        backgroundColor: '#667eea'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + 'ms';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            console.log('All charts initialized successfully');
+        }
+
+        async function refreshDashboard() {
+            console.log('Refreshing dashboard...');
+            try {
+                const response = await fetch('/monitor/api/monitor/dashboard');
+                console.log('API response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`API returned status ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Dashboard data received:', Object.keys(data));
+                
+                updateStatusOverview(data);
+                updateServicesGrid(data.services);
+                updateAlerts(data.recent_alerts);
+                updateCharts(data);
+                
+                const lastUpdateElement = document.getElementById('lastUpdate');
+                if (lastUpdateElement) {
+                    lastUpdateElement.textContent = 
+                        `Última actualización: ${new Date().toLocaleTimeString()}`;
+                }
+                console.log('Dashboard refresh completed');
+                    
+            } catch (error) {
+                console.error('Error refreshing dashboard:', error);
+                // Reduce frequency if there are errors to avoid spamming
+                clearInterval(refreshInterval);
+                refreshInterval = setInterval(refreshDashboard, 5000);
+                console.log('Reduced refresh frequency to 5 seconds due to errors');
+            }
+        }
+
+        function updateStatusOverview(data) {
+            document.getElementById('healthyServices').textContent = data.system_health.healthy_services;
+            document.getElementById('totalServices').textContent = data.system_health.total_services;
+            document.getElementById('healthPercentage').textContent = data.system_health.health_percentage + '%';
+            document.getElementById('totalAlerts').textContent = data.total_alerts;
+            
+            // Update health percentage color
+            const healthElement = document.getElementById('healthPercentage');
+            const percentage = data.system_health.health_percentage;
+            healthElement.className = 'value ' + 
+                (percentage >= 100 ? 'healthy' : 
+                 percentage >= 80 ? 'warning' : 'critical');
+        }
+
+        function updateServicesGrid(services) {
+            const grid = document.getElementById('servicesGrid');
+            grid.innerHTML = '';
+            
+            Object.entries(services).forEach(([name, service]) => {
+                const card = document.createElement('div');
+                card.className = 'service-card';
+                
+                const statusClass = service.status === 'healthy' ? 'status-healthy' : 
+                                   service.status === 'degraded' ? 'status-degraded' : 'status-unhealthy';
+                
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 0.5rem;">
+                        <strong>${name.replace('-service', '')}</strong>
+                        <span class="service-status ${statusClass}">${service.status}</span>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #64748b;">
+                        Última verificación: ${new Date(service.last_checked).toLocaleTimeString()}
+                    </div>
+                    ${service.details ? `<div style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.8;">${JSON.stringify(service.details)}</div>` : ''}
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        function updateAlerts(alerts) {
+            const alertsList = document.getElementById('alertsList');
+            
+            if (!alerts || alerts.length === 0) {
+                alertsList.innerHTML = '<div style="text-align: center; color: #10b981; padding: 2rem;">✅ No hay alertas activas</div>';
+                return;
+            }
+            
+            alertsList.innerHTML = '';
+            alerts.forEach(alert => {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert-item alert-${alert.severity}`;
+                alertDiv.innerHTML = `
+                    <div style="display: flex; justify-content: between; align-items: flex-start;">
+                        <div>
+                            <strong>${alert.message}</strong>
+                            ${alert.service ? `<div style="font-size: 0.9rem; margin-top: 0.25rem;">Servicio: ${alert.service}</div>` : ''}
+                        </div>
+                        <div style="font-size: 0.8rem; color: #64748b;">
+                            ${new Date(alert.timestamp).toLocaleString()}
+                        </div>
+                    </div>
+                `;
+                alertsList.appendChild(alertDiv);
+            });
+        }
+
+        function updateCharts(data) {
+            // Update Kafka chart
+            if (data.kafka_stats && data.kafka_stats.message_stats) {
+                const kafkaData = data.kafka_stats.message_stats;
+                charts.kafka.data.labels = Object.keys(kafkaData);
+                charts.kafka.data.datasets[0].data = Object.values(kafkaData);
+                charts.kafka.update();
+            }
+            
+            // Update system health chart with current data
+            const now = new Date().toLocaleTimeString();
+            const healthPercentage = data.system_health.health_percentage;
+            
+            // Keep only last 20 data points for performance
+            if (charts.systemHealth.data.labels.length >= 20) {
+                charts.systemHealth.data.labels.shift();
+                charts.systemHealth.data.datasets[0].data.shift();
+            }
+            
+            charts.systemHealth.data.labels.push(now);
+            charts.systemHealth.data.datasets[0].data.push(healthPercentage);
+            charts.systemHealth.update();
+            
+            // Update health timeline chart with service status
+            const services = Object.keys(data.services || {});
+            if (services.length > 0) {
+                // Update or create datasets for each service
+                services.forEach((serviceName, index) => {
+                    const serviceData = data.services[serviceName];
+                    const isHealthy = serviceData.status === 'healthy' ? 1 : 0;
+                    
+                    // Find or create dataset for this service
+                    let dataset = charts.healthTimeline.data.datasets.find(ds => ds.label === serviceName);
+                    if (!dataset) {
+                        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                        dataset = {
+                            label: serviceName,
+                            data: [],
+                            borderColor: colors[index % colors.length],
+                            backgroundColor: colors[index % colors.length] + '20',
+                            tension: 0.4
+                        };
+                        charts.healthTimeline.data.datasets.push(dataset);
+                    }
+                    
+                    // Keep only last 20 data points
+                    if (dataset.data.length >= 20) {
+                        dataset.data.shift();
+                    }
+                    dataset.data.push(isHealthy);
+                });
+                
+                // Update labels
+                if (charts.healthTimeline.data.labels.length >= 20) {
+                    charts.healthTimeline.data.labels.shift();
+                }
+                charts.healthTimeline.data.labels.push(now);
+                charts.healthTimeline.update();
+            }
+            
+            // Update response times with real data
+            const responseTimes = services.map(serviceName => {
+                return data.services[serviceName]?.response_time || 0;
+            });
+            
+            charts.responseTime.data.labels = services.map(name => name.replace('-service', ''));
+            charts.responseTime.data.datasets[0].data = responseTimes;
+            charts.responseTime.update();
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>

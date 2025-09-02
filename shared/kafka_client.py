@@ -82,3 +82,4 @@ class Topics:
     ORDER_CREATED = 'order-created'
     ORDER_PROCESSED = 'order-processed'
     HEALTH_CHECK = 'health-check'
+    SYSTEM_ERROR = 'system-error'

@@ -92,6 +92,22 @@ def handle_monitoring_message(topic: str, message: dict, stats_callback: Callabl
                     'warning'
                 )
         
+        elif topic == Topics.SYSTEM_ERROR:
+            # Handle system error messages
+            service = message.get('service', 'unknown-service')
+            endpoint = message.get('endpoint', 'unknown-endpoint')
+            method = message.get('method', 'unknown-method')
+            error_type = message.get('error_type', 'unknown-error')
+            error_message = message.get('error_message', 'No details available')
+            severity = message.get('severity', 'error')
+            
+            alert_callback(
+                error_type,
+                f"Error in {service} at {method} {endpoint}: {error_message}",
+                service,
+                severity
+            )
+        
     except Exception as e:
         logger.error(f"Error handling monitoring message from topic {topic}: {e}")
         alert_callback(
@@ -130,7 +146,8 @@ def start_kafka_monitor(stats_callback: Callable, alert_callback: Callable):
             Topics.ORDER_CREATED,
             Topics.ORDER_PROCESSED,
             Topics.STOCK_UPDATE,
-            Topics.HEALTH_CHECK
+            Topics.HEALTH_CHECK,
+            Topics.SYSTEM_ERROR
         ]
         
         group_id = 'monitor-service-group'

@@ -110,10 +110,44 @@ curl -X POST "$BASE_URL/api/orders/orders" \
     ]
   }'
 
+# Optional: Generate test errors for alert system (uncomment to test)
+# echo ""
+# echo "⚠️  Testing error alert system..."
+# echo "📧 Generating intentional errors to test Kafka alerts..."
+
+# # Test 1: Invalid order data (will trigger system error alert)
+# curl -X POST "$BASE_URL/api/orders/orders" \
+#   -H "Content-Type: application/json" \
+#   -d '{
+#     "order_type": "sell",
+#     "customer_name": "Test Error User",
+#     "items": [{
+#       "product_id": "invalid_id",
+#       "product_name": "Test Product",
+#       "quantity": "not_a_number",
+#       "unit_price": 10.0
+#     }]
+#   }' > /dev/null 2>&1
+
+# # Test 2: Missing required fields (will trigger validation error)
+# curl -X POST "$BASE_URL/api/orders/orders" \
+#   -H "Content-Type: application/json" \
+#   -d '{
+#     "customer_name": "Incomplete Order"
+#   }' > /dev/null 2>&1
+
+# echo "⚠️  Error alerts generated! Check the monitor dashboard for alerts."
+
 echo ""
 echo "✅ Sample data created successfully!"
 echo ""
 echo "📊 You can now check:"
 echo "  - Products: $BASE_URL/api/inventory/products"
 echo "  - Orders: $BASE_URL/api/orders/orders"
-echo "  - Dashboard: $BASE_URL/api/monitor/dashboard"
+echo "  - Monitor Dashboard: $BASE_URL/monitor/dashboard"
+echo "  - API Dashboard: $BASE_URL/monitor/api/monitor/dashboard"
+echo ""
+echo "🚨 To test error alerts system:"
+echo "  1. Send invalid order data to trigger alerts"
+echo "  2. Check alerts in: $BASE_URL/monitor/dashboard"
+echo "  3. Uncomment the error testing section in this script for examples"

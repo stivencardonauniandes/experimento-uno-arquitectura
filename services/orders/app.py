@@ -205,6 +205,28 @@ def create_order():
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error creating order: {e}")
+        
+        # Send error alert to Kafka for monitoring
+        try:
+            error_message = {
+                'service': 'orders-service',
+                'endpoint': '/orders',
+                'method': 'POST',
+                'error_type': 'order_creation_failed',
+                'error_message': str(e),
+                'timestamp': datetime.utcnow().isoformat(),
+                'severity': 'critical',
+                'request_data': {
+                    'customer_name': data.get('customer_name', 'Unknown') if 'data' in locals() else 'Unknown',
+                    'order_type': data.get('order_type', 'Unknown') if 'data' in locals() else 'Unknown',
+                    'items_count': len(data.get('items', [])) if 'data' in locals() and data.get('items') else 0
+                }
+            }
+            kafka_client.send_message(Topics.SYSTEM_ERROR, error_message)
+            logger.info("Error alert sent to monitoring system")
+        except Exception as kafka_error:
+            logger.error(f"Failed to send error alert to Kafka: {kafka_error}")
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/orders/<int:order_id>/status', methods=['PUT'])

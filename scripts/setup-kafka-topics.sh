@@ -38,6 +38,13 @@ docker exec $KAFKA_CONTAINER kafka-topics --create \
     --replication-factor 1 \
     --if-not-exists
 
+docker exec $KAFKA_CONTAINER kafka-topics --create \
+    --bootstrap-server localhost:9092 \
+    --topic system-error \
+    --partitions 3 \
+    --replication-factor 1 \
+    --if-not-exists
+
 # List topics
 echo "Created topics:"
 docker exec $KAFKA_CONTAINER kafka-topics --list --bootstrap-server localhost:9092
