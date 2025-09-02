@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_migrate import upgrade
+from sqlalchemy import text
 import os
 import sys
 import threading
@@ -32,7 +33,7 @@ def health_check():
     """Health check endpoint"""
     try:
         # Check database connectivity
-        db.session.execute('SELECT 1')
+        db.session.execute(text('SELECT 1'))
         db_status = "healthy"
     except Exception as e:
         db_status = f"unhealthy: {str(e)}"
