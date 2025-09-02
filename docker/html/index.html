@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microservices Architecture - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .service-card h3 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .service-card p {
+            color: #718096;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .endpoints {
+            list-style: none;
+        }
+
+        .endpoints li {
+            margin-bottom: 8px;
+        }
+
+        .endpoints a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .endpoints a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-healthy {
+            background-color: #48bb78;
+        }
+
+        .status-warning {
+            background-color: #ed8936;
+        }
+
+        .status-error {
+            background-color: #f56565;
+        }
+
+        .tools-section {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+        }
+
+        .tools-section h2 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .tool-link {
+            display: block;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #4a5568;
+            font-weight: 500;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .tool-link:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .service-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ Microservices Architecture</h1>
+            <p>Sistema de gestión de inventario y órdenes con comunicación asíncrona</p>
+        </div>
+
+        <div class="services-grid">
+            <div class="service-card">
+                <h3>📦 Servicio de Inventario</h3>
+                <p>Gestiona el stock de productos, movimientos de inventario y alertas de stock bajo.</p>
+                <ul class="endpoints">
+                    <li><a href="/inventory/health">🔍 Health Check</a></li>
+                    <li><a href="/inventory/products">📋 Productos</a></li>
+                    <li><a href="/inventory/products/low-stock">⚠️ Stock Bajo</a></li>
+                </ul>
+            </div>
+
+            <div class="service-card">
+                <h3>🛒 Servicio de Órdenes</h3>
+                <p>Procesa órdenes de compra y venta, gestiona estados y se comunica con inventario.</p>
+                <ul class="endpoints">
+                    <li><a href="/orders/health">🔍 Health Check</a></li>
+                    <li><a href="/orders/orders">📋 Órdenes</a></li>
+                    <li><a href="/orders/orders/stats">📊 Estadísticas</a></li>
+                </ul>
+            </div>
+
+            <div class="service-card">
+                <h3>📊 Servicio de Monitoreo</h3>
+                <p>Monitorea la salud de todos los servicios y proporciona métricas del sistema.</p>
+                <ul class="endpoints">
+                    <li><a href="/monitor/health">🔍 Health Check</a></li>
+                    <li><a href="/monitor/services/health">🏥 Estado de Servicios</a></li>
+                    <li><a href="/monitor/dashboard">📈 Dashboard</a></li>
+                    <li><a href="/monitor/alerts">🚨 Alertas</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="tools-section">
+            <h2>🛠️ Herramientas de Desarrollo</h2>
+            <div class="tools-grid">
+                <a href="http://localhost:8080" class="tool-link" target="_blank">
+                    📊 Kafka UI
+                </a>
+                <a href="http://localhost:5432" class="tool-link">
+                    🐘 PostgreSQL
+                </a>
+                <a href="/monitor/kafka/stats" class="tool-link">
+                    📈 Estadísticas Kafka
+                </a>
+                <a href="/monitor/services/health" class="tool-link">
+                    💚 Estado del Sistema
+                </a>
+            </div>
+        </div>
+
+        <div class="tools-section">
+            <h2>🚀 Endpoints de API</h2>
+            <div class="tools-grid">
+                <a href="/api/inventory/products" class="tool-link">
+                    GET /api/inventory/products
+                </a>
+                <a href="/api/orders/orders" class="tool-link">
+                    GET /api/orders/orders
+                </a>
+                <a href="/api/monitor/dashboard" class="tool-link">
+                    GET /api/monitor/dashboard
+                </a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Arquitectura de Microservicios con Flask, Kafka, PostgreSQL y Docker</p>
+            <p>🐍 Python | 🐳 Docker | 📨 Kafka | 🐘 PostgreSQL</p>
+        </div>
+    </div>
+
+    <script>
+        // Simple health check for services
+        async function checkServicesHealth() {
+            const services = ['inventory', 'orders', 'monitor'];
+            
+            for (const service of services) {
+                try {
+                    const response = await fetch(`/${service}/health`);
+                    const status = response.ok ? 'healthy' : 'error';
+                    console.log(`${service} service: ${status}`);
+                } catch (error) {
+                    console.log(`${service} service: error`);
+                }
+            }
+        }
+
+        // Check health on page load
+        document.addEventListener('DOMContentLoaded', checkServicesHealth);
+        
+        // Check health every 30 seconds
+        setInterval(checkServicesHealth, 30000);
+    </script>
+</body>
+</html>
