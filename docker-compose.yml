@@ -70,15 +70,16 @@ services:
 
   # Kafka UI (optional, for monitoring)
   kafka-ui:
-    image: obsidiandynamics/kafdrop:3.31.0
+    image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     depends_on:
       - kafka
     ports:
       - "8080:8080"
     environment:
-      KAFKA_BROKERCONNECT: kafka:29092
-      JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     networks:
       - microservices-network
 

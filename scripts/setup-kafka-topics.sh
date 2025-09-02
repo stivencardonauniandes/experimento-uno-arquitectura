@@ -11,28 +11,28 @@ KAFKA_CONTAINER="kafka"
 echo "Creating Kafka topics..."
 
 docker exec $KAFKA_CONTAINER kafka-topics --create \
-    --bootstrap-server localhost:9092 \
+    --bootstrap-server kafka:29092 \
     --topic stock-update \
     --partitions 3 \
     --replication-factor 1 \
     --if-not-exists
 
 docker exec $KAFKA_CONTAINER kafka-topics --create \
-    --bootstrap-server localhost:9092 \
+    --bootstrap-server kafka:29092 \
     --topic order-created \
     --partitions 3 \
     --replication-factor 1 \
     --if-not-exists
 
 docker exec $KAFKA_CONTAINER kafka-topics --create \
-    --bootstrap-server localhost:9092 \
+    --bootstrap-server kafka:29092 \
     --topic order-processed \
     --partitions 3 \
     --replication-factor 1 \
     --if-not-exists
 
 docker exec $KAFKA_CONTAINER kafka-topics --create \
-    --bootstrap-server localhost:9092 \
+    --bootstrap-server kafka:29092 \
     --topic health-check \
     --partitions 1 \
     --replication-factor 1 \
@@ -40,6 +40,6 @@ docker exec $KAFKA_CONTAINER kafka-topics --create \
 
 # List topics
 echo "Created topics:"
-docker exec $KAFKA_CONTAINER kafka-topics --list --bootstrap-server localhost:9092
+docker exec $KAFKA_CONTAINER kafka-topics --list --bootstrap-server kafka:29092
 
 echo "Kafka topics setup completed!"
