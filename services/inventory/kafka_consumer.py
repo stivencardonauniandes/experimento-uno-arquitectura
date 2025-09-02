@@ -123,7 +123,7 @@ def handle_order_created(message: dict):
                 'timestamp': datetime.utcnow().isoformat()
             }
             kafka_client.send_message(Topics.ORDER_PROCESSED, response_message)
-            
+                
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error processing order created message: {e}")
@@ -157,6 +157,26 @@ def start_kafka_consumer():
         
     except Exception as e:
         logger.error(f"Error in Kafka consumer: {e}")
+
+def start_kafka_consumer_with_app(app):
+    """Start Kafka consumer with Flask app context"""
+    def consumer_with_context():
+        try:
+            logger.info("Starting Kafka consumer for inventory service with app context")
+            
+            topics = [Topics.ORDER_CREATED, Topics.ORDER_PROCESSED]
+            group_id = 'inventory-service-group'
+            
+            def message_handler_with_context(topic: str, message: dict):
+                with app.app_context():
+                    handle_order_message(topic, message)
+            
+            kafka_client.consume_messages(topics, group_id, message_handler_with_context)
+            
+        except Exception as e:
+            logger.error(f"Error in Kafka consumer: {e}")
+    
+    return consumer_with_context
 
 if __name__ == "__main__":
     start_kafka_consumer()

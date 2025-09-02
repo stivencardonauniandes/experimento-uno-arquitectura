@@ -57,7 +57,7 @@ def handle_order_processed_response(message: dict):
         order_id = message.get('order_id')
         status = message.get('status')
         errors = message.get('errors', [])
-        
+    
         if not order_id:
             logger.error("Received order processed message without order_id")
             return
@@ -66,33 +66,33 @@ def handle_order_processed_response(message: dict):
         if not order:
             logger.error(f"Order {order_id} not found")
             return
-        
+            
         logger.info(f"Received inventory response for order {order.order_number}: {status}")
-        
-        # Update order status based on inventory service response
+            
+            # Update order status based on inventory service response
         if status == 'stock_reserved':
             # Stock successfully reserved for sell order
             if order.status == OrderStatus.PENDING:
                 order.status = OrderStatus.PROCESSING
                 db.session.commit()
                 logger.info(f"Order {order.order_number} moved to PROCESSING status")
-                
-        elif status == 'stock_updated':
-            # Stock updated for buy order
-            if order.status == OrderStatus.PENDING:
-                order.status = OrderStatus.PROCESSING
+                    
+            elif status == 'stock_updated':
+                # Stock updated for buy order
+                if order.status == OrderStatus.PENDING:
+                    order.status = OrderStatus.PROCESSING
+                    db.session.commit()
+                    logger.info(f"Buy order {order.order_number} moved to PROCESSING status")
+                    
+            elif status == 'stock_reservation_failed':
+                # Stock reservation failed
+                order.status = OrderStatus.FAILED
                 db.session.commit()
-                logger.info(f"Buy order {order.order_number} moved to PROCESSING status")
+                logger.error(f"Order {order.order_number} failed due to stock issues: {', '.join(errors)}")
                 
-        elif status == 'stock_reservation_failed':
-            # Stock reservation failed
-            order.status = OrderStatus.FAILED
-            db.session.commit()
-            logger.error(f"Order {order.order_number} failed due to stock issues: {', '.join(errors)}")
-            
-        else:
-            logger.warning(f"Unknown order processing status: {status}")
-            
+            else:
+                logger.warning(f"Unknown order processing status: {status}")
+                
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error processing order processed response: {e}")
@@ -109,6 +109,26 @@ def start_kafka_consumer():
         
     except Exception as e:
         logger.error(f"Error in Kafka consumer: {e}")
+
+def start_kafka_consumer_with_app(app):
+    """Start Kafka consumer with Flask app context"""
+    def consumer_with_context():
+        try:
+            logger.info("Starting Kafka consumer for orders service with app context")
+            
+            topics = [Topics.STOCK_UPDATE, Topics.ORDER_PROCESSED]
+            group_id = 'orders-service-group'
+            
+            def message_handler_with_context(topic: str, message: dict):
+                with app.app_context():
+                    handle_inventory_message(topic, message)
+            
+            kafka_client.consume_messages(topics, group_id, message_handler_with_context)
+            
+        except Exception as e:
+            logger.error(f"Error in Kafka consumer: {e}")
+    
+    return consumer_with_context
 
 if __name__ == "__main__":
     start_kafka_consumer()

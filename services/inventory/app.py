@@ -13,7 +13,7 @@ from shared.database import db, init_db, get_db_uri
 from shared.models import Product, StockMovement
 from shared.kafka_client import kafka_client, Topics
 from shared.utils import setup_logging, validate_json, health_check_response
-from services.inventory.kafka_consumer import start_kafka_consumer
+from services.inventory.kafka_consumer import start_kafka_consumer_with_app
 
 app = Flask(__name__)
 
@@ -220,8 +220,9 @@ if __name__ == '__main__':
     # Create tables
     create_tables()
     
-    # Start Kafka consumer in background thread
-    consumer_thread = threading.Thread(target=start_kafka_consumer, daemon=True)
+    # Start Kafka consumer in background thread with app context
+    consumer_func = start_kafka_consumer_with_app(app)
+    consumer_thread = threading.Thread(target=consumer_func, daemon=True)
     consumer_thread.start()
     logger.info("Started Kafka consumer thread")
     

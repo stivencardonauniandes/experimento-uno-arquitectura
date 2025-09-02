@@ -8,17 +8,13 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
-# Start all services
-echo "📦 Starting all services with Docker Compose..."
+# Start Kafka infrastructure first
+echo "📦 Starting Kafka infrastructure..."
+./scripts/start-kafka.sh
+
+# Start all remaining services
+echo "📦 Starting application services..."
 docker-compose up -d
-
-# Wait for services to be ready
-echo "⏳ Waiting for services to start..."
-sleep 45
-
-# Setup Kafka topics
-echo "📨 Setting up Kafka topics..."
-./scripts/setup-kafka-topics.sh
 
 # Check services health
 echo "🔍 Checking services health..."
